@@ -18,15 +18,23 @@
 Supports GTIN-8,GTIN-12,GTIN-13 and GTIN-14. Checksum calculation is done using
 the method defined at http://www.gs1.org/barcodes/support/check_digit_calculator.
 
+Version 1.0.2 Forked by ribeiroti
+
+Validation of GS1 prefix. Based on GTIN Validation Guide
+at https://www.gs1us.org/resources/standards/gtin-validation-guide
+Note: Prefixes reserved for future uses are allowed
+
 """
 
 import six
 
 def is_valid_GTIN(code):
     """ Validates any GTIN-8, GTIN-12, GTIN-13 or GTIN-14 code. """
-    cleaned_code = _clean(code)
+    if _is_valid_gtin_prefix(code):
+        cleaned_code = _clean(code)
+        return _is_valid_code(cleaned_code)
 
-    return _is_valid_code(cleaned_code)
+    return False
 
 
 def add_check_digit(code):
@@ -68,3 +76,34 @@ def _gtin_checksum(code):
 
 def _is_gtin_checksum_valid(code):
     return int(code[-1]) == _gtin_checksum(code[:-1])
+
+
+def _is_valid_gtin_prefix(code):
+    length = len(code)
+    cleaned_code = _clean(code)
+    if length == 8:
+        gtin_prefix = int(code[:3])
+        if 0 <= gtin_prefix <= 99:
+            return False
+        elif 200 <= gtin_prefix <= 299:
+            return False
+    elif length in [12, 13, 14]:
+        n1 = int(cleaned_code[0])
+        gtin_prefix = int(cleaned_code[1:4])
+        if n1 > 8:
+            return False
+        else:
+            if 20 <= gtin_prefix <= 29:
+                return False
+            elif 40 <= gtin_prefix <= 59:
+                return False
+            elif 200 <= gtin_prefix <= 299:
+                return False
+            elif 960 <= gtin_prefix <= 969:
+                return False
+            elif 980 <= gtin_prefix <= 999:
+                return False
+    else:
+        return False
+
+    return True
